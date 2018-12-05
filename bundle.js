@@ -392,7 +392,7 @@ module.exports =
         }
 
         // game.add.tileSprite(0, 0, (data.assets.tilemap.width / data.assets.tilemap.height) * window.innerHeight * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, data.assets.background.key).alpha = 0.6;
-        game.add.tileSprite(0, 0, 1664, 1664, data.assets.background.key).alpha = 0.6;
+        game.add.tileSprite(0, 0, 1664, 1664, data.assets.background.key).alpha = 0.4;
 
         map = game.add.tilemap(data.assets.tilemap.key);
         game.world.setBounds(0, 0, (data.assets.tilemap.width / data.assets.tilemap.height) * window.innerHeight * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
