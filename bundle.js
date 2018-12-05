@@ -230,6 +230,7 @@ module.exports =
                 key: "hero", url: "assets/mc_game/snap_2d_sprite.png",
                 frameWidth: 415,
                 frameHeight: 536,
+                audio: {jump:""},
                 animations: {
                     walk: {
                         from: 20,
@@ -392,6 +393,7 @@ module.exports =
         }
 
         // game.add.tileSprite(0, 0, (data.assets.tilemap.width / data.assets.tilemap.height) * window.innerHeight * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, data.assets.background.key).alpha = 0.6;
+        game.stage.backgroundColor = "#fff";
         game.add.tileSprite(0, 0, 1664, 1664, data.assets.background.key).alpha = 0.4;
 
         map = game.add.tilemap(data.assets.tilemap.key);
