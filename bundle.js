@@ -71,22 +71,27 @@
 var data;
 var loadState = __webpack_require__(1);
 var playState = __webpack_require__(3);
-var winState = __webpack_require__(6);
+var winState = __webpack_require__(7);
+var loseState = __webpack_require__(8);
+
 var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS, 'game');
 //var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update });
 game.state.add('load', loadState);
 game.state.add('play', playState);
 game.state.add('win', winState);
-game.state.start('load');
+game.state.add('lose', loseState);
 
+game.state.start('load');
+game.globals = {  player: null };
 var firing_sound;
 var hitting_sound;
 var soundtrack;
 var collecting_sound;
 var jump_sound;
 
-var player;
+//var player;
 var bullets;
+
 var enemies;
 var spaceBar;
 var direction = 1;
@@ -202,6 +207,12 @@ module.exports =
             enemies: [{
                 speed: 200,
                 key: "enemy", url: "assets/mc_game/maor_horizontal.png", frameWidth: 482, frameHeight: 498,
+                bullet: {
+                    key: "enemy_bullet", url: "assets/bomb.png", speed: 450, audio: {
+                        firing: { key: "enemy_bullet_firing", url: "assets/Fire_in_the_Hole.mp3" },
+                        hit: { key: "enemy_bullet_hit", url: "assets/Explosion.mp3" }
+                    }
+                },
                 animations: {
                     walk: {
                         from: 20,
@@ -333,8 +344,8 @@ module.exports =
 
         var data = this.game && this.game.data;
         var game = this.game;
-        var player = this.player;
-      
+        var player = this.game.globals.player;
+
         game.load.onFileComplete.add(fileComplete, this);
 
         data.assets.objects.forEach(function (object) {
@@ -348,11 +359,17 @@ module.exports =
         game.load.spritesheet(data.assets.hero.key, data.assets.hero.url, data.assets.hero.frameWidth, data.assets.hero.frameHeight);
         data.assets.enemies.forEach(function (enemy) {
             game.load.spritesheet(enemy.key, enemy.url, enemy.frameWidth, enemy.frameHeight);
+            game.load.image(enemy.bullet.key, enemy.bullet.url);
+
+            game.load.audio(enemy.bullet.audio.firing.key, enemy.bullet.audio.firing.url);
+            game.load.audio(enemy.bullet.audio.hit.key, enemy.bullet.audio.hit.url);
         });
         game.load.spritesheet(data.assets.enemies[0].key, data.assets.enemies[0].url);
         game.load.audio(data.assets.bullet.audio.firing.key, data.assets.bullet.audio.firing.url);
         game.load.audio(data.assets.bullet.audio.hit.key, data.assets.bullet.audio.hit.url);
         game.load.audio(data.assets.hero.audio.jump.key, data.assets.hero.audio.jump.url);
+
+
 
         game.load.audio(data.assets.soundtrack.key, data.assets.soundtrack.url);
         game.load.audio(data.assets.objects[0].audio.collect.key, data.assets.objects[0].audio.collect.url);
@@ -383,7 +400,7 @@ module.exports =
         Enemy = this.Enemy;
         var data = this.game && this.game.data;
         var game = this.game;
-     
+
         game.scale.forceOrientation(true);
         game.scale.pageAlignHorizontally = true;
         game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -441,9 +458,8 @@ module.exports =
 
         layer = map.createLayer('office_tile');//this is the layer name from Tiled. todo - make this dynamic?
         layer.resizeWorld();
-
-        this.player = game.add.sprite(data.assets.hero.x, data.assets.hero.y, data.assets.hero.key);
-        var player = this.player;
+        game.globals.player = game.add.sprite(data.assets.hero.x, data.assets.hero.y, data.assets.hero.key);
+        var player = game.globals.player;
         player.anchor.setTo(.5, .5);
         player.scale.setTo(data.assets.hero.scale || 1, data.assets.hero.scale || 1);
         game.physics.arcade.enable(player);
@@ -453,7 +469,7 @@ module.exports =
         game.camera.follow(player);
         game.camera.follow(player, Phaser.Camera.FOLLOW_PLATFORMER);
 
-        
+
         player.body.bounce.y = 0;
         player.body.gravity.y = data.assets.hero.gravity || 300;
         player.body.collideWorldBounds = true;
@@ -483,10 +499,18 @@ module.exports =
         data.assets.enemies.forEach(function (bad) {
             bad.positions.forEach(function (position) {
                 var enemy = new Enemy(game, position.x, position.y, bad.key);
+                enemy.attackSound = game.add.audio(bad.bullet.audio.firing.key);
+                enemy.HitSound = game.add.audio(bad.bullet.audio.hit.key);
                 enemies.add(enemy);
             });
+            
+          
+
         });
         game.time.events.loop(Phaser.Timer.SECOND * 2, this.turnRandomEnemy, this);
+        game.time.events.loop(Phaser.Timer.SECOND * 3, this.randomEnemyAttack, this);
+
+        
         bullets = game.add.group();
         bullets.enableBody = true;
 
@@ -497,7 +521,7 @@ module.exports =
         collecting_sound = game.add.audio(data.assets.objects[0].audio.collect.key);
         jump_sound = game.add.audio(data.assets.hero.audio.jump.key);
 
-        
+
 
         speciel_tiles = game.add.group();
         speciel_tiles.enableBody = true;
@@ -513,7 +537,8 @@ module.exports =
     update: function () {
         var data = this.game && this.game.data;
         var game = this.game;
-        var player = this.player;
+        var player = this.game.globals.player;
+
         game.physics.arcade.collide(player, layer);
         game.physics.arcade.overlap(player, endPoint, this.win, null, this);
         game.physics.arcade.collide(stars, layer);
@@ -546,7 +571,7 @@ module.exports =
 
     },
 
-   
+
     win: function () {
         var data = this.game && this.game.data;
         var game = this.game;
@@ -555,12 +580,13 @@ module.exports =
     lose: function () {
         var data = this.game && this.game.data;
         var game = this.game;
-       
+
         console.log("TODO - lose stuff, cool animation and lose stage");
-       // game.state.start('lose');
+        // game.state.start('lose');
     },
     jump: function () {
-        var player = this.player;
+        var player = this.game.globals.player;
+
         if (player && player.body && player.body.onFloor()) {
             player.body.velocity.y = -350;
             jump_sound.play();
@@ -593,6 +619,14 @@ module.exports =
 
         }
     },
+    randomEnemyAttack: function () {
+        var data = this.game && this.game.data;
+        var game = this.game;
+        enemy = enemies.children[Math.floor(Math.random() * enemies.children.length)]
+        if (enemy) {
+            enemy.attack();
+        }
+    },
     collectStar: function (player, star) {
         var data = this.game && this.game.data;
         var game = this.game;
@@ -604,7 +638,8 @@ module.exports =
 
     shootBullet: function () {
         Bullet = this.Bullet;
-        player = this.player;
+        var player = this.game.globals.player;
+
         var data = this.game && this.game.data;
         var game = this.game;
         if (bullets.length < 5) {
@@ -621,7 +656,7 @@ module.exports =
                 case "jetpack":
                     if (player.body.gravity.y != tile.collideData.effect.value.gravity) {
                         let originalGravity = player.body.gravity.y;
-                        player.body.gravity.y = tile.collideData.effect.value.gravity;                
+                        player.body.gravity.y = tile.collideData.effect.value.gravity;
                         this.game.time.events.add(tile.collideData.effect.value.time, function () { player.body.gravity.y = originalGravity }, this).autoDestroy = true;
                     }
                     break;
@@ -630,7 +665,7 @@ module.exports =
                     player.body.y = tile.collideData.effect.value.y;
                     break;
                 case "jumper":
-                    player.body.velocity.setTo(tile.collideData.effect.value.x,tile.collideData.effect.value.y)
+                    player.body.velocity.setTo(tile.collideData.effect.value.x, tile.collideData.effect.value.y)
                     break;
                 case "sizer":
                     player.scale.setTo(tile.collideData.effect.value.width, tile.collideData.effect.value.height)
@@ -639,23 +674,24 @@ module.exports =
                     if (!player.isDead) {
                         player.isDead = true;
                         player.body.velocity.x = 0;
-                       // enemy.animations.play('die', 10, false, true).onComplete.add(function () { enemies.remove(enemy); });
+                        // enemy.animations.play('die', 10, false, true).onComplete.add(function () { enemies.remove(enemy); });
 
                         player.animations.play(tile.collideData.effect.value.customAnimation ? tile.collideData.effect.value.customAnimation : 'idle', 30, false, true).onComplete.add(function () { _self.lose() });
-                      //  player.destroy();
+                        //  player.destroy();
                         hitting_sound.play();
-                      
+
                     }
                     break;
                 case "speeder":
                     player.body.velocity.x = 1000;
-                    player.body.moveTo(1000,1000,360)
+                    player.body.moveTo(1000, 1000, 360)
                     break;
-                  
+
                 default:
                     break;
-               
-            }}
+
+            }
+        }
     },
 
 
@@ -711,9 +747,10 @@ module.exports = class Bullet extends Phaser.Sprite {
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-﻿
+﻿Bullet = __webpack_require__(6),
+
 module.exports = class Enemy extends Phaser.Sprite {
     constructor(game, x, y, key) {
         function getFramesArray(start, end) {
@@ -749,11 +786,21 @@ module.exports = class Enemy extends Phaser.Sprite {
         this.body.bounce.y = 0;
         this.body.bounce.x = 1;
         this.body.collideWorldBounds = true;
+        this.bullets = game.add.group();
+        this.bullets.enableBody = true;
         // this.body.velocity.x = 30 + Math.random() * 50;
     };
    
 
-
+    attack() {
+        let data = this.game && this.game.data;
+        let game = this.game;
+        let direction;
+        this.body.velocity.x > 0 ? direction = 1 : direction = -1;
+        var bullet = new Bullet(game, this.x + 10, this.y + 10, this, direction, data.assets.enemies[0].bullet.speed, data.assets.enemies[0].bullet.key);
+        this.bullets.add(bullet);
+        firing_sound.play();
+    }
 
     update () {
         if (this.isDead) {
@@ -778,6 +825,62 @@ module.exports = class Enemy extends Phaser.Sprite {
 
 /***/ }),
 /* 6 */
+/***/ (function(module, exports) {
+
+﻿
+module.exports = class EnemyBullet extends Phaser.Sprite {
+
+    constructor(game, x, y,enemy , direction, speed, key) {
+        super(game, x, y, key);
+        game.physics.enable(this, Phaser.Physics.ARCADE);
+        enemy.attackSound.play();
+        this.xSpeed = direction * speed;
+    }
+    update() {
+        var player = this.game.globals.player;
+        var game = this.game;
+        this.game.physics.arcade.overlap(this, player, function (bullet, player) {
+            enemy.bullets.remove(bullet);
+            player.isDead = true;
+            player.body.velocity.x = 0;
+    
+         //   player.animations.play('die', 10, false, true).onComplete.add(function () { game.state.start('lose'); });
+            enemy.HitSound.play();
+            game.state.start('lose');
+        });
+
+
+        this.body.velocity.y = 0;
+        this.body.velocity.x = this.xSpeed;
+        if (this.x < 0 || this.x > 1664) {
+            this.destroy();
+        }
+
+    }
+   
+}
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports) {
+
+﻿module.exports = {
+    preload: function () {
+        this.game.load.image('win_bg', this.game.data && this.game.data.assets
+            && this.game.data.assets.winImage && this.game.data.assets.winImage.url
+            || "assets/gameover.png")
+    },
+    create: function () {
+        var data = this.game.data;
+        this.game.plugins.removeAll();
+        this.game.add.tileSprite(0, 0, (data.assets.tilemap.width / data.assets.tilemap.height) * window.innerHeight * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio, 'win_bg');
+
+    }
+}
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports) {
 
 ﻿module.exports = {
