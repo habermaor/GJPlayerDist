@@ -749,7 +749,7 @@ module.exports = class Bullet extends Phaser.Sprite {
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-﻿Bullet = __webpack_require__(6),
+﻿EnemyBullet = __webpack_require__(6),
 
 module.exports = class Enemy extends Phaser.Sprite {
     constructor(game, x, y, key) {
@@ -797,7 +797,7 @@ module.exports = class Enemy extends Phaser.Sprite {
         let game = this.game;
         let direction;
         this.body.velocity.x > 0 ? direction = 1 : direction = -1;
-        var bullet = new Bullet(game, this.x + 10, this.y + 10, this, direction, data.assets.enemies[0].bullet.speed, data.assets.enemies[0].bullet.key);
+        var bullet = new EnemyBullet(game, this.x + 10, this.y + 10, this, direction, data.assets.enemies[0].bullet.speed, data.assets.enemies[0].bullet.key);
         this.bullets.add(bullet);
         firing_sound.play();
     }
