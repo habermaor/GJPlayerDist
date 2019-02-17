@@ -236,26 +236,32 @@ module.exports =
           
             hero: {
                 speed: 300,
-                x: 32, y: 1450,
-                scale:0.3,
-                key: "hero", url: "assets/mc_game/snap_2d_sprite.png",
+                x: 100, y: 1450,
+                scale:1,
+                key: "hero", url: "assets/mc_game/example_hero.png",
                 frameWidth: 415,
                 frameHeight: 536,
                 audio: {jump:""},
+                frameWidth: 266.6666666666667,
+                frameHeight: 300,
                 animations: {
                     walk: {
-                        from: 20,
-                        to: 29
+                        from: 5,
+                        to: 9
                     },
                     jump: {
                         from: 10,
-                        to: 19
+                        to: 14
                     },
                     idle: {
                         from: 0,
-                        to: 9
+                        to: 4
+                    },
+                    die: {
+                        from: 0,
+                        to: 4
                     }
-                },
+                }
             },
             specialTiles: [
                   //    {
@@ -322,7 +328,7 @@ module.exports =
      
             endStage: { key: "endStage", url: "assets/trophy.png", x: 1330, y: 250 },
 
-            tilemap: { key: "tilemap", url: "assets/mc_game/office2.json", width: 52, height: 52/*TODO - put all the tilemap data here, instead of external file*/ },
+            tilemap: { key: "tilemap", url: "assets/mc_game/mario.json", width: 52, height: 52/*TODO - put all the tilemap data here, instead of external file*/ },
             tileImages: [{ key: "b3ad8f", url: "assets/mc_game/b3ad8f.png" }]/*TODO - no need in this. images should be taken from map json*/
         },
 
@@ -462,7 +468,10 @@ module.exports =
         var player = game.globals.player;
         player.anchor.setTo(.5, .5);
         player.scale.setTo(data.assets.hero.scale || 1, data.assets.hero.scale || 1);
+
+
         game.physics.arcade.enable(player);
+        player.body.setSize(player.width * 0.5, player.height * 0.75, player.width * 0.25, player.height * 0.25);
 
 
 
